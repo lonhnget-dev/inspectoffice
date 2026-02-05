@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factories List | បញ្ជីរោងចក្រ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+
+    <!-- Sidebar -->
+    <div id="sidebarContainer"></div>
+    <script>
+        fetch("../sidebar.html")
+            .then(res => res.text())
+            .then(html => { document.getElementById("sidebarContainer").innerHTML = html; })
+            .catch(err => console.warn("Sidebar not found, check path."));
+    </script>
+
+    <div class="p-4 sm:ml-64">
+        <!-- Dashboard Boxes -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4">
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-gray-500 text-sm font-medium">រោងចក្រ​សរុប</div>
+                <div id="totalFactories" class="text-2xl font-bold text-blue-700">0</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-gray-500 text-sm font-medium">កម្មករសរុប</div>
+                <div id="totalWorkers" class="text-2xl font-bold text-green-600">0</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-gray-500 text-sm font-medium">ស្រី</div>
+                <div id="totalFemale" class="text-2xl font-bold text-pink-600">0</div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4 text-center">
+                <div class="text-gray-500 text-sm font-medium">បរទេស</div>
+                <div id="totalForeign" class="text-2xl font-bold text-purple-600">0</div>
+            </div>
+        </div>
+
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">បញ្ជីរោងចក្រ (Factory List)</h1>
+
+        <!-- Filters & Add Button -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="ស្វែងរកឈ្មោះ ឬ កូដ..." 
+                   class="px-3 py-2 border rounded-md w-full sm:w-1/3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select id="locationFilter" onchange="filterTable()" class="px-3 py-2 border rounded-md w-full sm:w-1/4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- គ្រប់ខេត្ត/ក្រុង --</option>
+                <option value="Phnom Penh">Phnom Penh</option>
+                <option value="Kandal">Kandal</option>
+                <option value="Takeo">Takeo</option>
+                <option value="Kampong Speu">Kampong Speu</option>
+            </select>
+            <button onclick="openAddModal()" class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center">
+                <i class="ph ph-plus-circle mr-2 text-lg"></i> បន្ថែមរោងចក្រ
+            </button>
+        </div>
+
+        <!-- Factories Table -->
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg bg-white border border-gray-200">
+            <table id="factoriesTable" class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                    <tr>
+                        <th class="px-4 py-3">Code</th>
+                        <th class="px-4 py-3">ឈ្មោះរោងចក្រ (EN/KH)</th>
+                        <th class="px-4 py-3">ព័ត៌មានអាជីវកម្ម</th>
+                        <th class="px-4 py-3">អាសយដ្ឋាន</th>
+                        <th class="px-4 py-3 text-center">ស្ថិតិកម្មករ</th>
+                        <th class="px-4 py-3">ស្ថានភាព</th>
+                        <th class="px-4 py-3 text-right">សកម្មភាព</th>
+                    </tr>
+                </thead>
+                <tbody id="factoryBody"></tbody>
+            </table>
+             <!-- pigan -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="crud-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative p-4 w-full max-w-6xl max-h-full">
+            <div class="relative bg-white rounded-lg shadow">
+                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+                    <h3 id="modalTitle" class="text-xl font-bold text-gray-900">បញ្ចូលព័ត៌មានរោងចក្រថ្មី</h3>
+                    <button type="button" onclick="closeModal()" class="text-gray-400 bg-transparent hover:bg-gray-200 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center">
+                        <i class="ph ph-x text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="factoryForm" class="p-6">
+                    <!-- Section 1: General Info -->
+                    <h4 class="font-bold text-blue-700 mb-3 border-b pb-1">១. ព័ត៌មានទូទៅ</h4>
+                    <div class="grid gap-4 mb-6 md:grid-cols-4">
+                        <div><label class="block mb-1 text-sm font-medium">កូដ (Code)</label><input type="text" id="code" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2" required></div>
+                        <div><label class="block mb-1 text-sm font-medium">ឈ្មោះអង់គ្លេស (English Name)</label><input type="text" id="englishName" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2" required></div>
+                        <div><label class="block mb-1 text-sm font-medium">ឈ្មោះខ្មែរ</label><input type="text" id="khmerName" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2" required></div>
+                        <div><label class="block mb-1 text-sm font-medium">ស្ថានភាព (Status)</label>
+                            <select id="status" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2">
+                                <option value="Active">សកម្ម</option>
+                                <option value="Suspended">ព្យួរ</option>
+                                <option value="Closed">បិទ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Location -->
+                    <h4 class="font-bold text-blue-700 mb-3 border-b pb-1">២. ទីតាំង</h4>
+                    <div class="grid gap-4 mb-6 md:grid-cols-4">
+                        <div><label class="block mb-1 text-sm font-medium">ខេត្ត/ក្រុង</label><input type="text" id="province" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ស្រុក/ខណ្ឌ</label><input type="text" id="district" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ឃុំ/សង្កាត់</label><input type="text" id="commune" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ភូមិ</label><input type="text" id="village" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                    </div>
+
+                    <!-- Section 3: Worker Stats -->
+                    <h4 class="font-bold text-blue-700 mb-3 border-b pb-1">៣. ស្ថិតិកម្មករ</h4>
+                    <div class="grid gap-4 mb-6 md:grid-cols-5">
+                        <div><label class="block mb-1 text-sm font-medium">កម្មករសរុប</label><input type="number" id="totalWorker" class="bg-gray-200 border text-sm rounded-lg w-full p-2" readonly></div>
+                        <div><label class="block mb-1 text-sm font-medium">បុរស</label><input type="number" id="maleWorker" oninput="calcTotal()" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2" value="0"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ស្រី</label><input type="number" id="femaleWorker" oninput="calcTotal()" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2" value="0"></div>
+                        <div><label class="block mb-1 text-sm font-medium">បរទេស</label><input type="number" id="foriegnWorker" oninput="calcTotal()" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2" value="0"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ស្រីបរទេស</label><input type="number" id="femaleForiegnWorker" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2" value="0"></div>
+                    </div>
+
+                    <!-- Section 4: Admin & Assistant -->
+                    <h4 class="font-bold text-blue-700 mb-3 border-b pb-1">៤. អ្នកគ្រប់គ្រង & អ្នកជំនួយ</h4>
+                    <div class="grid gap-4 mb-6 md:grid-cols-4">
+                        <input type="text" id="adminName" placeholder="ឈ្មោះអ្នកគ្រប់គ្រង" class="text-sm p-2 border rounded">
+                        <input type="text" id="adminPhone" placeholder="ទូរស័ព្ទអ្នកគ្រប់គ្រង" class="text-sm p-2 border rounded">
+                        <input type="text" id="astName" placeholder="ឈ្មោះជំនួយ" class="text-sm p-2 border rounded">
+                        <input type="text" id="astPhone" placeholder="ទូរស័ព្ទជំនួយ" class="text-sm p-2 border rounded">
+                    </div>
+
+                    <!-- Section 5: Advanced & Map -->
+                    <h4 class="font-bold text-blue-700 mb-3 border-b pb-1">៥. ព័ត៌មានកម្រិតខ្ពស់ & ផែនទី</h4>
+                    <div class="grid gap-4 mb-6 md:grid-cols-4">
+                        <div><label class="block mb-1 text-sm font-medium">តំបន់ (Zone)</label><input type="text" id="zone" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">តំណភ្ជាប់ផែនទី</label><input type="text" id="linkMape" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">វិស័យ (Sector)</label><input type="text" id="sector" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ប្រភេទអាជីវកម្ម</label><input type="text" id="businessType" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                    </div>
+
+                    <!-- Section 6: Owner & CEO -->
+                    <h4 class="font-bold text-blue-700 mb-3 border-b pb-1">៦. ម្ចាស់ & ប្រធានអង្គភាព</h4>
+                    <div class="grid gap-4 mb-6 md:grid-cols-3">
+                        <div><label class="block mb-1 text-sm font-medium">ឈ្មោះម្ចាស់</label><input type="text" id="ownerName" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ទូរស័ព្ទម្ចាស់</label><input type="text" id="ownerPhone" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">សញ្ជាតិម្ចាស់</label><input type="text" id="onwerNationality" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                    </div>
+                    <div class="grid gap-3 mb-6 md:grid-cols-3">
+                        <div><label class="block mb-1 text-sm font-medium">ឈ្មោះប្រធានអង្គភាព (CEO)</label><input type="text" id="ceoName" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">ទូរស័ព្ទប្រធានអង្គភាព</label><input type="text" id="ceoPhone" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                        <div><label class="block mb-1 text-sm font-medium">សញ្ជាតិប្រធានអង្គភាព</label><input type="text" id="ceoNationality" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></div>
+                    </div>
+                    <div class="grid gap-3 mb-6 md:grid-cols-2">
+                        <div><label class="block mb-1 text-sm font-medium">ឯកសារ (Documents / Doc)</label><textarea id="doc" rows="3" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></textarea></div>
+                        <div><label class="block mb-1 text-sm font-medium">កំណត់សំគាល់ (Remarks)</label><textarea id="remarks" rows="3" class="bg-gray-50 border border-gray-300 text-sm rounded-lg w-full p-2"></textarea></div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 border-t pt-5">
+                        <button type="button" onclick="closeModal()" class="text-gray-500 bg-white hover:bg-gray-100 border rounded-lg text-sm px-5 py-2.5">បោះបង់</button>
+                        <button type="submit" id="submitBtn" class="text-white bg-blue-700 hover:bg-blue-800 rounded-lg text-sm px-10 py-2.5">រក្សាទុករោងចក្រ</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    <script>
+        const apiUrl = "http://localhost:3000/api/v1/factories";
+        let allFactories = [];
+        let isEditMode = false;
+        let currentEditId = null;
+        let modalObj;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalEl = document.getElementById('crud-modal');
+            if (modalEl) modalObj = new Modal(modalEl);
+            fetchFactories();
+        });
+
+        async function fetchFactories() {
+            try {
+                const res = await fetch(apiUrl);
+                const data = await res.json();
+                if (data.success) {
+                    allFactories = data.data;
+                    renderFactories(allFactories);
+                    updateDashboard(allFactories);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function updateDashboard(factories) {
+            let totalFactories = factories.length;
+            let totalWorkers = 0;
+            let totalFemale = 0;
+            let totalForeign = 0;
+
+            factories.forEach(f => {
+                totalWorkers += (f.totalWorker || 0);
+                totalFemale += (f.femaleWorker || 0);
+                totalForeign += (f.foriegnWorker || 0);
+            });
+
+            document.getElementById("totalFactories").innerText = totalFactories;
+            document.getElementById("totalWorkers").innerText = totalWorkers;
+            document.getElementById("totalFemale").innerText = totalFemale;
+            document.getElementById("totalForeign").innerText = totalForeign;
+        }
+
+        function renderFactories(factories) {
+            const tbody = document.getElementById("factoryBody");
+            tbody.innerHTML = "";
+            factories.forEach(f => {
+                const tr = document.createElement("tr");
+                tr.className = "bg-white border-b hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="px-4 py-4 font-bold text-gray-900">${f.code || "-"}</td>
+                    <td class="px-4 py-4">
+                        <div class="font-bold">${f.englishName || "-"}</div>
+                        <div class="text-gray-500 text-xs">${f.khmerName || "-"}</div>
+                    </td>
+                    <td class="px-4 py-4 text-xs">
+                        <div><b>Sec:</b> ${f.sector || "-"}</div>
+                        <div><b>Zone:</b> ${f.zone || "-"}</div>
+                        ${f.linkMape ? `<a href="${f.linkMape}" target="_blank" class="text-blue-600 underline">View Map</a>` : ''}
+                    </td>
+                    <td class="px-4 py-4 text-xs">${f.province || "-"}, ${f.district || "-"}</td>
+                    <td class="px-4 py-4 text-center">
+                        <div class="mb-1"><span class="font-bold">សរុប</span> ${f.totalWorker || 0}</div>
+                        <div class="text-xs text-gray-500">ស្រី ${f.femaleWorker || 0} | បរទេស ${f.foriegnWorker || 0}</div>
+                    </td>
+                    <td class="px-4 py-4">
+                        <span class="${f.status === 'Active' ? 'text-green-600' : 'text-red-600'} font-bold">${f.status}</span>
+                    </td>
+                    <td class="px-4 py-4 text-right">
+                        <button onclick="editFactory(${f.id})" class="text-blue-600 mr-3"><i class="ph ph-pencil-simple text-xl"></i></button>
+                        <button onclick="deleteFactory(${f.id})" class="text-red-600"><i class="ph ph-trash text-xl"></i></button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openAddModal() {
+            isEditMode = false;
+            currentEditId = null;
+            document.getElementById("factoryForm").reset();
+            document.getElementById("modalTitle").innerText = "បញ្ចូលព័ត៌មានរោងចក្រថ្មី";
+            document.getElementById("submitBtn").innerText = "Save Factory";
+            modalObj.show();
+        }
+
+        function editFactory(id) {
+            isEditMode = true;
+            currentEditId = id;
+            const f = allFactories.find(item => item.id === id);
+            if (!f) return;
+
+            document.getElementById("code").value = f.code || "";
+            document.getElementById("englishName").value = f.englishName || "";
+            document.getElementById("khmerName").value = f.khmerName || "";
+            document.getElementById("status").value = f.status || "Active";
+            document.getElementById("province").value = f.province || "";
+            document.getElementById("district").value = f.district || "";
+            document.getElementById("commune").value = f.commune || "";
+            document.getElementById("village").value = f.village || "";
+            document.getElementById("maleWorker").value = f.maleWorker || 0;
+            document.getElementById("femaleWorker").value = f.femaleWorker || 0;
+            document.getElementById("foriegnWorker").value = f.foriegnWorker || 0;
+            document.getElementById("femaleForiegnWorker").value = f.femaleForiegnWorker || 0;
+            document.getElementById("adminName").value = f.adminName || "";
+            document.getElementById("adminPhone").value = f.adminPhone || "";
+            document.getElementById("astName").value = f.astName || "";
+            document.getElementById("astPhone").value = f.astPhone || "";
+            document.getElementById("ownerName").value = f.ownerName || "";
+            document.getElementById("ownerPhone").value = f.ownerPhone || "";
+            document.getElementById("onwerNationality").value = f.onwerNationality || "";
+            document.getElementById("ceoName").value = f.ceoName || "";
+            document.getElementById("ceoPhone").value = f.ceoPhone || "";
+            document.getElementById("ceoNationality").value = f.ceoNationality || "";
+            document.getElementById("doc").value = f.doc || "";
+            document.getElementById("remarks").value = f.remarks || "";
+            document.getElementById("zone").value = f.zone || "";
+            document.getElementById("linkMape").value = f.linkMape || "";
+            document.getElementById("sector").value = f.sector || "";
+            document.getElementById("businessType").value = f.businessType || "";
+
+            calcTotal();
+            document.getElementById("modalTitle").innerText = "កែប្រែព័ត៌មានរោងចក្រ (Edit Factory)";
+            document.getElementById("submitBtn").innerText = "Update Factory";
+            modalObj.show();
+        }
+
+        document.getElementById("factoryForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                code: document.getElementById("code").value,
+                englishName: document.getElementById("englishName").value,
+                khmerName: document.getElementById("khmerName").value,
+                status: document.getElementById("status").value,
+                province: document.getElementById("province").value,
+                district: document.getElementById("district").value,
+                commune: document.getElementById("commune").value,
+                village: document.getElementById("village").value,
+                maleWorker: parseInt(document.getElementById("maleWorker").value) || 0,
+                femaleWorker: parseInt(document.getElementById("femaleWorker").value) || 0,
+                foriegnWorker: parseInt(document.getElementById("foriegnWorker").value) || 0,
+                totalWorker: parseInt(document.getElementById("totalWorker").value) || 0,
+                femaleForiegnWorker: parseInt(document.getElementById("femaleForiegnWorker").value) || 0,
+                adminName: document.getElementById("adminName").value,
+                adminPhone: document.getElementById("adminPhone").value,
+                astName: document.getElementById("astName").value,
+                astPhone: document.getElementById("astPhone").value,
+                ownerName: document.getElementById("ownerName").value,
+                ownerPhone: document.getElementById("ownerPhone").value,
+                onwerNationality: document.getElementById("onwerNationality").value,
+                ceoName: document.getElementById("ceoName").value,
+                ceoPhone: document.getElementById("ceoPhone").value,
+                ceoNationality: document.getElementById("ceoNationality").value,
+                doc: document.getElementById("doc").value,
+                remarks: document.getElementById("remarks").value,
+                zone: document.getElementById("zone").value,
+                linkMape: document.getElementById("linkMape").value,
+                sector: document.getElementById("sector").value,
+                businessType: document.getElementById("businessType").value
+            };
+            const method = isEditMode ? "PUT" : "POST";
+            const url = isEditMode ? `${apiUrl}/${currentEditId}` : apiUrl;
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    closeModal();
+                    fetchFactories();
+                } else {
+                    alert("Error: " + result.message);
+                }
+            } catch (err) { console.error(err); }
+        });
+
+        async function deleteFactory(id) {
+            if (!confirm("Are you sure?")) return;
+            try {
+                const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+                const result = await res.json();
+                if (result.success) fetchFactories();
+            } catch (err) { console.error(err); }
+        }
+
+        function closeModal() { modalObj.hide(); }
+
+        function calcTotal() {
+            const m = parseInt(document.getElementById('maleWorker').value) || 0;
+            const f = parseInt(document.getElementById('femaleWorker').value) || 0;
+            const fo = parseInt(document.getElementById('foriegnWorker').value) || 0;
+            document.getElementById('totalWorker').value = m + f + fo;
+        }
+
+        function filterTable() {
+    const s = document.getElementById("searchInput").value.toLowerCase();
+    const l = document.getElementById("locationFilter").value;
+    const filtered = allFactories.filter(f => {
+        const nameMatch = (f.englishName || "").toLowerCase().includes(s) || (f.code || "").toLowerCase().includes(s);
+        const locationMatch = l === "" || (f.province || "").toLowerCase() === l.toLowerCase();
+        return nameMatch && locationMatch;
+    });
+    renderFactories(filtered);
+}
+    </script>
+
+</body>
+</html>

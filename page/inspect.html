@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspection Management | អធិការកិច្ច</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+
+    <div id="sidebarContainer"></div>
+    <script>
+        fetch("../sidebar.html")
+            .then(res => res.text())
+            .then(html => { document.getElementById("sidebarContainer").innerHTML = html; })
+            .catch(err => console.warn("Sidebar not found."));
+    </script>
+
+    <div class="p-4 sm:ml-64">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">អធិការកិច្ច (Inspection Log)</h1>
+                <p class="text-sm text-gray-500">Manage and track factory inspections</p>
+            </div>
+            
+            <div class="flex gap-2">
+                <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="ស្វែងរក..." class="p-2 border rounded-lg text-sm focus:ring-blue-500">
+                <button onclick="openAddModal()" class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center">
+                    <i class="ph ph-plus-circle mr-2 text-lg"></i> បន្ថែមថ្មី
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                    <tr>
+                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">លេខអធិការ</th>
+                        <th class="px-4 py-3">លេខកំហិត</th>
+                        <th class="px-4 py-3">នាមករណ៍</th>
+                        <th class="px-4 py-3">កំហិត</th>
+                        <th class="px-4 py-3">ផាក (៛)</th>
+                        <th class="px-4 py-3">ក្រុម</th>
+                        <th class="px-4 py-3">ថ្ងៃកំណត់កំហិត</th>
+                        <th class="px-4 py-3">ថ្ងៃចុះអធិការ</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inspectionBody"></tbody>
+            </table>
+        </div>
+    </div>
+<!--- Modal -->
+    <div id="crud-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+        <div class="relative p-4 w-full max-w-4xl max-h-full">
+            <div class="relative bg-white rounded-lg shadow">
+                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+                    <h3 id="modalTitle" class="text-lg font-semibold text-gray-900">បន្ថែមអធិការកិច្ចថ្មី</h3>
+                    <button type="button" onclick="closeModal()" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center">
+                        <i class="ph ph-x text-xl"></i>
+                    </button>
+                </div>
+                <form id="inspectionForm" class="p-4 md:p-5">
+                    <div class="grid gap-4 mb-4 grid-cols-2">
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">លេខកូដអធិការ (Code)</label>
+                            <input type="number" name="code_insp" id="code_insp" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2" required>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">នាមករណ៍ (Khmer Name)</label>
+                            <input type="text" name="khName" id="khName" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2" required>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ក្រុម (Group)</label>
+                            <input type="text" name="group" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ប្រភេទ (Category)</label>
+                            <input type="text" name="category" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ថ្ងៃចុះអធិការ</label>
+                            <input type="date" name="dateInsp" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ប្រភព (Source)</label>
+                            <input type="text" name="source" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ប្រធានបទ (Topic)</label>
+                            <input type="text" name="topic" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">មតិនិយោជក</label>
+                            <textarea name="employerSpeech" rows="2" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2"></textarea>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">មតិកម្មករ</label>
+                            <textarea name="employeeSpeech" rows="2" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2"></textarea>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">លេខកូដកំហិត</label>
+                            <input type="number" name="restrictionCode" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ថ្ងៃកំណត់កំហិត</label>
+                            <input type="date" name="restrictionDate" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ខ្លឹមសារកំហិត (Restriction)</label>
+                            <textarea name="restriction" rows="2" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2"></textarea>
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">លទ្ធផល</label>
+                            <input type="text" name="result" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                        <div>
+                            <label class="block mb-1 text-xs font-medium text-gray-900">ផាកពិន័យ (Fine)</label>
+                            <input type="number" name="fine" class="bg-gray-50 border border-gray-300 text-sm rounded-lg block w-full p-2">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5">
+                        <i class="ph ph-floppy-disk mr-1"></i> រក្សាទុកទិន្នន័យ
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    <script>
+        const apiUrl = "http://localhost:3000/api/v1/inspections";
+        let allInspections = [];
+        let modalObj;
+        let isEditMode = false;
+        let currentId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalElement = document.getElementById('crud-modal');
+            if (modalElement) modalObj = new Modal(modalElement);
+            fetchData();
+        });
+
+        async function fetchData() {
+            try {
+                const res = await fetch(apiUrl);
+                const result = await res.json();
+                if (result.success) {
+                    allInspections = result.data;
+                    console.table(allInspections);
+                    renderTable(allInspections);
+                }
+            } catch (err) { console.error("Fetch error:", err); }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById("inspectionBody");
+            tbody.innerHTML = data.map(item => `
+                <tr class="border-b hover:bg-gray-50 text-gray-900 text-xs">
+                    <td class="px-4 py-3">${item.id}</td>
+                    <td class="px-4 py-3">${item.code_insp || '-'}</td>
+                    <td class="px-4 py-3">${item.restrictionCode || '-'}</td>
+                    <td class="px-4 py-3 font-bold text-blue-700">${item.khName || '-'}</td>
+                    <td class="px-4 py-3 truncate max-w-[150px]">${item.restriction || '-'}</td>
+                    <td class="px-4 py-3 font-bold">${item.fine ? item.fine.toLocaleString() : '0'}</td>
+                    <td class="px-4 py-3">${item.group || '-'}</td>
+                    <td class="px-4 py-3">${item.restrictionDate ? new Date(item.restrictionDate).toLocaleDateString('km-KH') : '-'}</td>
+                    <td class="px-4 py-3">${item.dateInsp ? new Date(item.dateInsp).toLocaleDateString('km-KH') : '-'}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="editItem(${item.id})" class="text-blue-600 p-1"><i class="ph ph-pencil-simple text-lg"></i></button>
+                        <button onclick="deleteItem(${item.id})" class="text-red-600 p-1"><i class="ph ph-trash text-lg"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddModal() {
+            isEditMode = false;
+            currentId = null;
+            document.getElementById("inspectionForm").reset();
+            document.getElementById("modalTitle").innerText = "បន្ថែមអធិការកិច្ចថ្មី";
+            modalObj.show();
+        }
+
+        function editItem(id) {
+            isEditMode = true;
+            currentId = id;
+            const item = allInspections.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById("modalTitle").innerText = "កែប្រែទិន្នន័យ (ID: " + id + ")";
+            const form = document.getElementById("inspectionForm");
+            
+            // Map data to form fields
+            Object.keys(item).forEach(key => {
+                const input = form.elements[key];
+                if (input) {
+                    if (input.type === 'date' && item[key]) {
+                        input.value = item[key].split('T')[0];
+                    } else {
+                        input.value = item[key] || "";
+                    }
+                }
+            });
+            modalObj.show();
+        }
+
+        document.getElementById("inspectionForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            const url = isEditMode ? `${apiUrl}/${currentId}` : apiUrl;
+            const method = isEditMode ? "PUT" : "POST";
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+                if ((await res.json()).success) {
+                    modalObj.hide();
+                    fetchData();
+                }
+            } catch (err) { console.error("Save error:", err); }
+        });
+
+        async function deleteItem(id) {
+            if (!confirm("Confirm Delete?")) return;
+            try {
+                const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+                if ((await res.json()).success) fetchData();
+            } catch (err) { console.error("Delete error:", err); }
+        }
+
+        function filterTable() {
+            const q = document.getElementById("searchInput").value.toLowerCase();
+            renderTable(allInspections.filter(i => 
+                (i.khName && i.khName.toLowerCase().includes(q)) || 
+                (i.code_insp && i.code_insp.toString().includes(q))
+            ));
+        }
+
+        function closeModal() { modalObj.hide(); }
+    </script>
+</body>
+</html>

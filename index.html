@@ -1,0 +1,32 @@
+<body class="bg-gray-100">
+
+    <div id="sidebarContainer"></div>
+
+    <main class="sm:ml-64 p-8">
+        </main>
+
+    <script>
+        // Common function to load the sidebar and highlight the active link
+        async function loadSidebar() {
+            try {
+                // Fetching from root "/" ensures it works from /page/ folder too
+                const response = await fetch('/sidebar.html'); 
+                const html = await response.text();
+                const container = document.getElementById('sidebarContainer');
+                container.innerHTML = html;
+
+                // Logic to highlight the active page
+                const currentPath = window.location.pathname;
+                const links = container.querySelectorAll('.nav-link');
+                links.forEach(link => {
+                    if (link.getAttribute('href') === currentPath) {
+                        link.classList.add('bg-blue-100', 'text-blue-700');
+                    }
+                });
+            } catch (error) {
+                console.error("Error loading sidebar:", error);
+            }
+        }
+        loadSidebar();
+    </script>
+</body>
